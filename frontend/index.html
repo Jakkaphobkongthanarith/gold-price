@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🏆 Gold Price Monitor - Real-time</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      header {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      h1 {
+        color: #333;
+        font-size: 2em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-size: 0.9em;
+        font-weight: bold;
+        text-transform: uppercase;
+        animation: pulse 2s infinite;
+      }
+
+      .status-online {
+        background: #10b981;
+        color: white;
+      }
+
+      .status-paused {
+        background: #f59e0b;
+        color: white;
+      }
+
+      .status-stopped {
+        background: #ef4444;
+        color: white;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+      }
+
+      button {
+        padding: 12px 25px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1em;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      }
+
+      .btn-online {
+        background: #10b981;
+        color: white;
+      }
+
+      .btn-pause {
+        background: #f59e0b;
+        color: white;
+      }
+
+      .btn-stop {
+        background: #ef4444;
+        color: white;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .card {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      .card-header {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #555;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .price-large {
+        font-size: 2.5em;
+        font-weight: bold;
+        color: #667eea;
+        margin: 10px 0;
+      }
+
+      .price-info {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+      }
+
+      .price-info:last-child {
+        border-bottom: none;
+      }
+
+      .price-label {
+        color: #666;
+        font-weight: 500;
+      }
+
+      .price-value {
+        font-weight: bold;
+        color: #333;
+        font-size: 1.1em;
+      }
+
+      .price-buy {
+        color: #10b981;
+      }
+
+      .price-sell {
+        color: #ef4444;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+      }
+
+      th {
+        background: #667eea;
+        color: white;
+        font-weight: bold;
+      }
+
+      tr:hover {
+        background: #f8f9fa;
+      }
+
+      .state-buy {
+        color: #10b981;
+        font-weight: bold;
+      }
+
+      .state-sell {
+        color: #ef4444;
+        font-weight: bold;
+      }
+
+      .state-market {
+        color: #3b82f6;
+        font-weight: bold;
+      }
+
+      .last-update {
+        text-align: center;
+        color: #666;
+        margin-top: 10px;
+        font-size: 0.9em;
+      }
+
+      .change-positive {
+        color: #10b981;
+      }
+
+      .change-negative {
+        color: #ef4444;
+      }
+
+      @media (max-width: 768px) {
+        h1 {
+          font-size: 1.5em;
+        }
+
+        .controls {
+          width: 100%;
+          margin-top: 15px;
+        }
+
+        button {
+          flex: 1;
+          justify-content: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>
+          🏆 Gold Price Monitor
+          <span id="statusBadge" class="status-badge status-online"
+            >● ONLINE</span
+          >
+        </h1>
+        <div class="controls">
+          <button class="btn-online" onclick="setStatus('online')">
+            ▶️ Online
+          </button>
+          <button class="btn-pause" onclick="setStatus('paused')">
+            ⏸️ Pause
+          </button>
+          <button class="btn-stop" onclick="setStatus('stopped')">
+            ⏹️ Stop
+          </button>
+        </div>
+      </header>
+
+      <div class="grid">
+        <!-- Investing.com Card -->
+        <div class="card">
+          <div class="card-header">🌍 Gold Spot Price (XAU/USD)</div>
+          <div class="price-large" id="investingPrice">$0.00</div>
+          <div class="price-info">
+            <span class="price-label">เปลี่ยนแปลง:</span>
+            <span class="price-value" id="investingChange">-</span>
+          </div>
+          <div class="price-info">
+            <span class="price-label">เปอร์เซ็นต์:</span>
+            <span class="price-value" id="investingPercent">-</span>
+          </div>
+        </div>
+
+        <!-- Gold Bar Card -->
+        <div class="card">
+          <div class="card-header">🥇 ทองคำแท่ง 96.5%</div>
+          <div class="price-info">
+            <span class="price-label">รับซื้อ:</span>
+            <span class="price-value price-buy" id="barBuyPrice">฿0.00</span>
+          </div>
+          <div class="price-info">
+            <span class="price-label">ขายออก:</span>
+            <span class="price-value price-sell" id="barSellPrice">฿0.00</span>
+          </div>
+        </div>
+
+        <!-- Gold Jewelry Card -->
+        <div class="card">
+          <div class="card-header">💍 ทองรูปพรรณ 96.5%</div>
+          <div class="price-info">
+            <span class="price-label">รับซื้อ:</span>
+            <span class="price-value price-buy" id="jewelryBuyPrice"
+              >฿0.00</span
+            >
+          </div>
+          <div class="price-info">
+            <span class="price-label">ขายออก:</span>
+            <span class="price-value price-sell" id="jewelrySellPrice"
+              >฿0.00</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Transactions Table -->
+      <div class="card">
+        <div class="card-header">📊 Transaction History (Real-time)</div>
+        <div style="overflow-x: auto">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Symbol</th>
+                <th>Price</th>
+                <th>State</th>
+                <th>Date/Time</th>
+              </tr>
+            </thead>
+            <tbody id="transactionTable">
+              <tr>
+                <td colspan="5" style="text-align: center; color: #999">
+                  Waiting for data...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="last-update">
+          Last update: <span id="lastUpdate">-</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let ws;
+      let reconnectInterval;
+
+      function connectWebSocket() {
+        ws = new WebSocket("ws://localhost:8080/ws");
+
+        ws.onopen = () => {
+          console.log("✅ WebSocket connected");
+          clearInterval(reconnectInterval);
+        };
+
+        ws.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          updateUI(data);
+        };
+
+        ws.onclose = () => {
+          console.log("❌ WebSocket disconnected. Reconnecting...");
+          reconnectInterval = setInterval(() => {
+            connectWebSocket();
+          }, 3000);
+        };
+
+        ws.onerror = (error) => {
+          console.error("WebSocket error:", error);
+        };
+      }
+
+      function updateUI(data) {
+        // Update status badge
+        const statusBadge = document.getElementById("statusBadge");
+        statusBadge.textContent = `● ${data.status.toUpperCase()}`;
+        statusBadge.className = `status-badge status-${data.status}`;
+
+        // Update Investing.com
+        if (data.investing_com) {
+          document.getElementById(
+            "investingPrice"
+          ).textContent = `$${data.investing_com.price.toFixed(2)}`;
+
+          const change = data.investing_com.change || "-";
+          const changeEl = document.getElementById("investingChange");
+          changeEl.textContent = change;
+          changeEl.className = change.includes("-")
+            ? "price-value change-negative"
+            : "price-value change-positive";
+
+          document.getElementById("investingPercent").textContent =
+            data.investing_com.change_percent || "-";
+        }
+
+        // Update GoldTraders
+        if (data.goldtraders && data.goldtraders.prices) {
+          data.goldtraders.prices.forEach((price) => {
+            if (price.type.includes("แท่ง") || price.type.includes("Bar")) {
+              document.getElementById(
+                "barBuyPrice"
+              ).textContent = `฿${price.buy_price.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}`;
+              document.getElementById(
+                "barSellPrice"
+              ).textContent = `฿${price.sell_price.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}`;
+            } else if (
+              price.type.includes("รูปพรรณ") ||
+              price.type.includes("Jewelry")
+            ) {
+              document.getElementById(
+                "jewelryBuyPrice"
+              ).textContent = `฿${price.buy_price.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}`;
+              document.getElementById(
+                "jewelrySellPrice"
+              ).textContent = `฿${price.sell_price.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}`;
+            }
+          });
+        }
+
+        // Update transactions
+        if (data.transactions && data.transactions.length > 0) {
+          const tbody = document.getElementById("transactionTable");
+          tbody.innerHTML = data.transactions
+            .slice(0, 20)
+            .map(
+              (tx) => `
+                    <tr>
+                        <td>#${tx.id}</td>
+                        <td>${tx.symbol}</td>
+                        <td>${
+                          typeof tx.price === "number"
+                            ? tx.price.toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                              })
+                            : tx.price
+                        }</td>
+                        <td class="state-${
+                          tx.state
+                        }">${tx.state.toUpperCase()}</td>
+                        <td>${tx.datetime}</td>
+                    </tr>
+                `
+            )
+            .join("");
+        }
+
+        // Update last update time
+        document.getElementById("lastUpdate").textContent =
+          data.last_update || "-";
+      }
+
+      async function setStatus(status) {
+        try {
+          const response = await fetch("http://localhost:8080/api/set-status", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ status }),
+          });
+
+          const result = await response.json();
+          console.log("Status changed:", result);
+        } catch (error) {
+          console.error("Error changing status:", error);
+        }
+      }
+
+      // Connect on page load
+      connectWebSocket();
+    </script>
+  </body>
+</html>
