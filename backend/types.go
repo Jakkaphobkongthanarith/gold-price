@@ -20,6 +20,7 @@ type InvestingGoldPrice struct {
 	Price         float64 `json:"price"`
 	Change        string  `json:"change"`
 	ChangePercent string  `json:"change_percent"`
+	Currency      string  `json:"currency"`
 	UpdateTime    string  `json:"update_time"`
 }
 

@@ -78,11 +78,30 @@ func handleSetStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	serverState.mu.Lock()
+	oldStatus := serverState.Status
 	serverState.Status = req.Status
 	serverState.mu.Unlock()
 
 	if req.Status == "stopped" {
 		resetPrices()
+	} else if req.Status == "online" && oldStatus == "stopped" {
+		// เมื่อกด ONLINE หลังจาก STOP → ดึงข้อมูลใหม่ทันที
+		go func() {
+			log.Println("🟢 System ONLINE - Fetching fresh data...")
+			goldTraders, investing := FetchInitialData()
+			
+			serverState.mu.Lock()
+			if goldTraders != nil {
+				serverState.GoldTraders = goldTraders
+			}
+			if investing != nil {
+				serverState.InvestingCom = investing
+			}
+			serverState.LastUpdate = time.Now().Format("2006-01-02 15:04:05")
+			serverState.mu.Unlock()
+			
+			broadcastUpdate()
+		}()
 	}
 
 	broadcastUpdate()
@@ -129,20 +148,13 @@ func resetPrices() {
 	serverState.mu.Lock()
 	defer serverState.mu.Unlock()
 
-	if serverState.GoldTraders != nil {
-		for i := range serverState.GoldTraders.Prices {
-			serverState.GoldTraders.Prices[i].BuyPrice = 0
-			serverState.GoldTraders.Prices[i].SellPrice = 0
-		}
-	}
-
-	if serverState.InvestingCom != nil {
-		serverState.InvestingCom.Price = 0
-		serverState.InvestingCom.Change = "0"
-		serverState.InvestingCom.ChangePercent = "0%"
-	}
-
+	// เคลียร์ข้อมูลทั้งหมดเป็น nil
+	serverState.GoldTraders = nil
+	serverState.InvestingCom = nil
+	serverState.Transactions = []Transaction{}
 	serverState.LastUpdate = time.Now().Format("2006-01-02 15:04:05")
+	
+	log.Println("🛑 System STOPPED - All data cleared")
 }
 
 func broadcastUpdate() {
@@ -166,14 +178,23 @@ func UpdateServerData(goldTraders *GoldPriceResponse, investing *InvestingGoldPr
 	serverState.mu.Lock()
 	defer serverState.mu.Unlock()
 
+	// อนุญาตให้อัพเดทได้เฉพาะเมื่อ status เป็น online
 	if serverState.Status != "online" {
 		return
 	}
 
-	serverState.GoldTraders = goldTraders
-	serverState.InvestingCom = investing
+	// อัพเดทข้อมูล
+	if goldTraders != nil {
+		serverState.GoldTraders = goldTraders
+	}
+	
+	if investing != nil {
+		serverState.InvestingCom = investing
+	}
+	
 	serverState.LastUpdate = time.Now().Format("2006-01-02 15:04:05")
 
+	// เพิ่ม transactions
 	if goldTraders != nil && len(goldTraders.Prices) > 0 {
 		for _, price := range goldTraders.Prices {
 			serverState.Transactions = append([]Transaction{{

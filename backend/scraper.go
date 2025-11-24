@@ -54,12 +54,12 @@ func MonitorInvestingCom(ctx context.Context, onUpdate func(*InvestingGoldPrice)
 		case <-ticker.C:
 		}
 
-		var priceText, changeText, changePercentText string
+		var priceText string
+		var currencyText string
 
 		err := chromedp.Run(browserCtx,
 			chromedp.Text(`[data-test="instrument-price-last"]`, &priceText, chromedp.ByQuery),
-			chromedp.Text(`[data-test="instrument-price-change"]`, &changeText, chromedp.ByQuery, chromedp.NodeVisible),
-			chromedp.Text(`[data-test="instrument-price-change-percent"]`, &changePercentText, chromedp.ByQuery, chromedp.NodeVisible),
+			chromedp.Text(`[data-test="currency-in-label"] span.font-bold`, &currencyText, chromedp.ByQuery),
 		)
 
 		if err != nil {
@@ -88,8 +88,7 @@ func MonitorInvestingCom(ctx context.Context, onUpdate func(*InvestingGoldPrice)
 			newPrice := &InvestingGoldPrice{
 				Type:          "Gold Spot Price (XAU/USD)",
 				Price:         price,
-				Change:        changeText,
-				ChangePercent: changePercentText,
+				Currency:      strings.TrimSpace(currencyText),
 				UpdateTime:    time.Now().Format("2006-01-02 15:04:05"),
 			}
 			onUpdate(newPrice)
@@ -228,19 +227,22 @@ func FetchInitialData() (*GoldPriceResponse, *InvestingGoldPrice) {
 	defer cancel2()
 
 	var priceText string
+	var currencyText string
 	err2 := chromedp.Run(browserCtx2,
 		chromedp.Navigate(config.InvestingComURL),
 		chromedp.Sleep(3*time.Second),
 		chromedp.Text(`[data-test="instrument-price-last"]`, &priceText, chromedp.ByQuery),
+		chromedp.Text(`[data-test="currency-in-label"] span.font-bold`, &currencyText, chromedp.ByQuery),
 	)
 
 	if err2 == nil {
 		price := ParsePrice(priceText)
 		if price > 0 {
-			fmt.Printf("💰 Investing.com: $%.2f USD\n", price)
+			fmt.Printf("💰 Investing.com: $%.2f %s\n", price, strings.TrimSpace(currencyText))
 			investing = &InvestingGoldPrice{
 				Type:       "Gold Spot Price (XAU/USD)",
 				Price:      price,
+				Currency:   strings.TrimSpace(currencyText),
 				UpdateTime: time.Now().Format("2006-01-02 15:04:05"),
 			}
 		}

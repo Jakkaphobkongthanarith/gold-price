@@ -4,7 +4,7 @@ import "time"
 
 const (
 	InvestingComInterval = 2 * time.Second
-	GoldTradersInterval  = 30 * time.Second
+	GoldTradersInterval  = 10 * time.Second
 	
 	InitialLoadTimeout = 3 * time.Second
 	

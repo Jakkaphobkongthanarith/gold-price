@@ -274,19 +274,19 @@
         <div class="card">
           <div class="card-header">🌍 Gold Spot Price (XAU/USD)</div>
           <div class="price-large" id="investingPrice">$0.00</div>
-          <div class="price-info">
+          <!-- <div class="price-info">
             <span class="price-label">เปลี่ยนแปลง:</span>
             <span class="price-value" id="investingChange">-</span>
-          </div>
-          <div class="price-info">
+          </div> -->
+          <!-- <div class="price-info">
             <span class="price-label">เปอร์เซ็นต์:</span>
             <span class="price-value" id="investingPercent">-</span>
-          </div>
+          </div> -->
         </div>
 
         <!-- Gold Bar Card -->
         <div class="card">
-          <div class="card-header">🥇 ทองคำแท่ง 96.5%</div>
+          <div class="card-header">ทองคำแท่ง 96.5% (บาท)</div>
           <div class="price-info">
             <span class="price-label">รับซื้อ:</span>
             <span class="price-value price-buy" id="barBuyPrice">฿0.00</span>
@@ -299,7 +299,7 @@
 
         <!-- Gold Jewelry Card -->
         <div class="card">
-          <div class="card-header">💍 ทองรูปพรรณ 96.5%</div>
+          <div class="card-header">ทองรูปพรรณ 96.5% (บาท)</div>
           <div class="price-info">
             <span class="price-label">รับซื้อ:</span>
             <span class="price-value price-buy" id="jewelryBuyPrice"
@@ -380,24 +380,23 @@
         statusBadge.className = `status-badge status-${data.status}`;
 
         // Update Investing.com
-        if (data.investing_com) {
+        if (data.investing_com && data.investing_com.price > 0) {
           document.getElementById(
             "investingPrice"
           ).textContent = `$${data.investing_com.price.toFixed(2)}`;
-
-          const change = data.investing_com.change || "-";
-          const changeEl = document.getElementById("investingChange");
-          changeEl.textContent = change;
-          changeEl.className = change.includes("-")
-            ? "price-value change-negative"
-            : "price-value change-positive";
-
-          document.getElementById("investingPercent").textContent =
-            data.investing_com.change_percent || "-";
+        } else {
+          document.getElementById("investingPrice").textContent = "$0.00";
         }
 
         // Update GoldTraders
-        if (data.goldtraders && data.goldtraders.prices) {
+        if (
+          data.goldtraders &&
+          data.goldtraders.prices &&
+          data.goldtraders.prices.length > 0
+        ) {
+          let hasBarPrice = false;
+          let hasJewelryPrice = false;
+
           data.goldtraders.prices.forEach((price) => {
             if (price.type.includes("แท่ง") || price.type.includes("Bar")) {
               document.getElementById(
@@ -410,6 +409,7 @@
               ).textContent = `฿${price.sell_price.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
               })}`;
+              hasBarPrice = true;
             } else if (
               price.type.includes("รูปพรรณ") ||
               price.type.includes("Jewelry")
@@ -424,8 +424,23 @@
               ).textContent = `฿${price.sell_price.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
               })}`;
+              hasJewelryPrice = true;
             }
           });
+
+          if (!hasBarPrice) {
+            document.getElementById("barBuyPrice").textContent = "฿0.00";
+            document.getElementById("barSellPrice").textContent = "฿0.00";
+          }
+          if (!hasJewelryPrice) {
+            document.getElementById("jewelryBuyPrice").textContent = "฿0.00";
+            document.getElementById("jewelrySellPrice").textContent = "฿0.00";
+          }
+        } else {
+          document.getElementById("barBuyPrice").textContent = "฿0.00";
+          document.getElementById("barSellPrice").textContent = "฿0.00";
+          document.getElementById("jewelryBuyPrice").textContent = "฿0.00";
+          document.getElementById("jewelrySellPrice").textContent = "฿0.00";
         }
 
         // Update transactions
@@ -453,6 +468,15 @@
                 `
             )
             .join("");
+        } else {
+          const tbody = document.getElementById("transactionTable");
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="5" style="text-align: center; color: #999">
+                No transactions available
+              </td>
+            </tr>
+          `;
         }
 
         // Update last update time

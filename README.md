@@ -78,7 +78,7 @@ GET  /                     // Serve frontend files
 
 ```go
 InvestingComInterval = 2 * time.Second   // ตรวจสอบทุก 2 วินาที
-GoldTradersInterval  = 30 * time.Second  // ตรวจสอบทุก 30 วินาที
+GoldTradersInterval  = 10 * time.Second  // ตรวจสอบทุก 30 วินาที
 ServerPort = ":8080"                     // พอร์ต API server
 ```
 
