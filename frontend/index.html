@@ -20,7 +20,9 @@
 
       .container {
         max-width: 1400px;
-        margin: 0 auto;
+        /* margin: 0 auto; */
+        margin-top: 100px;
+        /* display: flex; */
       }
 
       header {
@@ -45,9 +47,9 @@
 
       .status-badge {
         display: inline-block;
-        padding: 8px 20px;
+        padding: 4px 10px;
         border-radius: 20px;
-        font-size: 0.9em;
+        font-size: 0.6em;
         font-weight: bold;
         text-transform: uppercase;
         animation: pulse 2s infinite;
@@ -249,260 +251,199 @@
   </head>
   <body>
     <div class="container">
-      <header>
-        <h1>
-          🏆 Gold Price Monitor
-          <span id="statusBadge" class="status-badge status-online"
-            >● ONLINE</span
-          >
-        </h1>
-        <div class="controls">
-          <button class="btn-online" onclick="setStatus('online')">
-            ▶️ Online
-          </button>
-          <button class="btn-pause" onclick="setStatus('paused')">
-            ⏸️ Pause
-          </button>
-          <button class="btn-stop" onclick="setStatus('stopped')">
-            ⏹️ Stop
-          </button>
-        </div>
-      </header>
+      <div>
+        <header>
+          <h1>
+            Gold Price Monitor
+            <span id="statusBadge" class="status-badge status-online"
+              >● ONLINE</span
+            >
+          </h1>
+          <div class="controls">
+            <button class="btn-online" onclick="setStatus('online')">
+              Online
+            </button>
+            <button class="btn-pause" onclick="setStatus('paused')">
+              Pause
+            </button>
+            <button class="btn-stop" onclick="setStatus('stopped')">
+              Stop
+            </button>
+          </div>
+        </header>
 
-      <div class="grid">
-        <!-- Investing.com Card -->
-        <div class="card">
-          <div class="card-header">🌍 Gold Spot Price (XAU/USD)</div>
-          <div class="price-large" id="investingPrice">$0.00</div>
-          <!-- <div class="price-info">
+        <div class="grid">
+          <!-- Investing.com Card -->
+          <div class="card">
+            <div class="card-header">Gold Spot Price (XAU/USD)</div>
+            <div class="price-large" id="investingPrice">$0.00</div>
+            <!-- <div class="price-info">
             <span class="price-label">เปลี่ยนแปลง:</span>
             <span class="price-value" id="investingChange">-</span>
           </div> -->
-          <!-- <div class="price-info">
+            <!-- <div class="price-info">
             <span class="price-label">เปอร์เซ็นต์:</span>
             <span class="price-value" id="investingPercent">-</span>
           </div> -->
-        </div>
+          </div>
 
-        <!-- Gold Bar Card -->
-        <div class="card">
-          <div class="card-header">ทองคำแท่ง 96.5% (บาท)</div>
-          <div class="price-info">
-            <span class="price-label">รับซื้อ:</span>
-            <span class="price-value price-buy" id="barBuyPrice">฿0.00</span>
+          <!-- Gold Bar Card -->
+          <div class="card">
+            <div class="card-header">ทองคำแท่ง 96.5% (บาท)</div>
+            <div class="price-info">
+              <span class="price-label">รับซื้อ:</span>
+              <span class="price-value price-buy" id="barBuyPrice">฿0.00</span>
+            </div>
+            <div class="price-info">
+              <span class="price-label">ขายออก:</span>
+              <span class="price-value price-sell" id="barSellPrice"
+                >฿0.00</span
+              >
+            </div>
           </div>
-          <div class="price-info">
-            <span class="price-label">ขายออก:</span>
-            <span class="price-value price-sell" id="barSellPrice">฿0.00</span>
-          </div>
-        </div>
 
-        <!-- Gold Jewelry Card -->
-        <div class="card">
-          <div class="card-header">ทองรูปพรรณ 96.5% (บาท)</div>
-          <div class="price-info">
-            <span class="price-label">รับซื้อ:</span>
-            <span class="price-value price-buy" id="jewelryBuyPrice"
-              >฿0.00</span
-            >
-          </div>
-          <div class="price-info">
-            <span class="price-label">ขายออก:</span>
-            <span class="price-value price-sell" id="jewelrySellPrice"
-              >฿0.00</span
-            >
+          <!-- Gold Jewelry Card -->
+          <div class="card">
+            <div class="card-header">ทองรูปพรรณ 96.5% (บาท)</div>
+            <div class="price-info">
+              <span class="price-label">รับซื้อ:</span>
+              <span class="price-value price-buy" id="jewelryBuyPrice"
+                >฿0.00</span
+              >
+            </div>
+            <div class="price-info">
+              <span class="price-label">ขายออก:</span>
+              <span class="price-value price-sell" id="jewelrySellPrice"
+                >฿0.00</span
+              >
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Transactions Table -->
-      <div class="card">
-        <div class="card-header">📊 Transaction History (Real-time)</div>
-        <div style="overflow-x: auto">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Symbol</th>
-                <th>Price</th>
-                <th>State</th>
-                <th>Date/Time</th>
-              </tr>
-            </thead>
-            <tbody id="transactionTable">
-              <tr>
-                <td colspan="5" style="text-align: center; color: #999">
-                  Waiting for data...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="last-update">
-          Last update: <span id="lastUpdate">-</span>
-        </div>
-      </div>
-    </div>
+      <script>
+        let ws;
+        let reconnectInterval;
 
-    <script>
-      let ws;
-      let reconnectInterval;
+        function connectWebSocket() {
+          ws = new WebSocket("ws://localhost:8080/ws");
 
-      function connectWebSocket() {
-        ws = new WebSocket("ws://localhost:8080/ws");
+          ws.onopen = () => {
+            console.log("✅ WebSocket connected");
+            clearInterval(reconnectInterval);
+          };
 
-        ws.onopen = () => {
-          console.log("✅ WebSocket connected");
-          clearInterval(reconnectInterval);
-        };
+          ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            updateUI(data);
+          };
 
-        ws.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          updateUI(data);
-        };
+          ws.onclose = () => {
+            console.log("❌ WebSocket disconnected. Reconnecting...");
+            reconnectInterval = setInterval(() => {
+              connectWebSocket();
+            }, 3000);
+          };
 
-        ws.onclose = () => {
-          console.log("❌ WebSocket disconnected. Reconnecting...");
-          reconnectInterval = setInterval(() => {
-            connectWebSocket();
-          }, 3000);
-        };
-
-        ws.onerror = (error) => {
-          console.error("WebSocket error:", error);
-        };
-      }
-
-      function updateUI(data) {
-        // Update status badge
-        const statusBadge = document.getElementById("statusBadge");
-        statusBadge.textContent = `● ${data.status.toUpperCase()}`;
-        statusBadge.className = `status-badge status-${data.status}`;
-
-        // Update Investing.com
-        if (data.investing_com && data.investing_com.price > 0) {
-          document.getElementById(
-            "investingPrice"
-          ).textContent = `$${data.investing_com.price.toFixed(2)}`;
-        } else {
-          document.getElementById("investingPrice").textContent = "$0.00";
+          ws.onerror = (error) => {
+            console.error("WebSocket error:", error);
+          };
         }
 
-        // Update GoldTraders
-        if (
-          data.goldtraders &&
-          data.goldtraders.prices &&
-          data.goldtraders.prices.length > 0
-        ) {
-          let hasBarPrice = false;
-          let hasJewelryPrice = false;
+        function updateUI(data) {
+          // Update status badge
+          const statusBadge = document.getElementById("statusBadge");
+          statusBadge.textContent = `● ${data.status.toUpperCase()}`;
+          statusBadge.className = `status-badge status-${data.status}`;
 
-          data.goldtraders.prices.forEach((price) => {
-            if (price.type.includes("แท่ง") || price.type.includes("Bar")) {
-              document.getElementById(
-                "barBuyPrice"
-              ).textContent = `฿${price.buy_price.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-              })}`;
-              document.getElementById(
-                "barSellPrice"
-              ).textContent = `฿${price.sell_price.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-              })}`;
-              hasBarPrice = true;
-            } else if (
-              price.type.includes("รูปพรรณ") ||
-              price.type.includes("Jewelry")
-            ) {
-              document.getElementById(
-                "jewelryBuyPrice"
-              ).textContent = `฿${price.buy_price.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-              })}`;
-              document.getElementById(
-                "jewelrySellPrice"
-              ).textContent = `฿${price.sell_price.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-              })}`;
-              hasJewelryPrice = true;
+          // Update Investing.com
+          if (data.investing_com && data.investing_com.price > 0) {
+            document.getElementById(
+              "investingPrice"
+            ).textContent = `$${data.investing_com.price.toFixed(2)}`;
+          } else {
+            document.getElementById("investingPrice").textContent = "$0.00";
+          }
+
+          // Update GoldTraders
+          if (
+            data.goldtraders &&
+            data.goldtraders.prices &&
+            data.goldtraders.prices.length > 0
+          ) {
+            let hasBarPrice = false;
+            let hasJewelryPrice = false;
+
+            data.goldtraders.prices.forEach((price) => {
+              if (price.type.includes("แท่ง") || price.type.includes("Bar")) {
+                document.getElementById(
+                  "barBuyPrice"
+                ).textContent = `฿${price.buy_price.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                })}`;
+                document.getElementById(
+                  "barSellPrice"
+                ).textContent = `฿${price.sell_price.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                })}`;
+                hasBarPrice = true;
+              } else if (
+                price.type.includes("รูปพรรณ") ||
+                price.type.includes("Jewelry")
+              ) {
+                document.getElementById(
+                  "jewelryBuyPrice"
+                ).textContent = `฿${price.buy_price.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                })}`;
+                document.getElementById(
+                  "jewelrySellPrice"
+                ).textContent = `฿${price.sell_price.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                })}`;
+                hasJewelryPrice = true;
+              }
+            });
+
+            if (!hasBarPrice) {
+              document.getElementById("barBuyPrice").textContent = "฿0.00";
+              document.getElementById("barSellPrice").textContent = "฿0.00";
             }
-          });
-
-          if (!hasBarPrice) {
+            if (!hasJewelryPrice) {
+              document.getElementById("jewelryBuyPrice").textContent = "฿0.00";
+              document.getElementById("jewelrySellPrice").textContent = "฿0.00";
+            }
+          } else {
             document.getElementById("barBuyPrice").textContent = "฿0.00";
             document.getElementById("barSellPrice").textContent = "฿0.00";
-          }
-          if (!hasJewelryPrice) {
             document.getElementById("jewelryBuyPrice").textContent = "฿0.00";
             document.getElementById("jewelrySellPrice").textContent = "฿0.00";
           }
-        } else {
-          document.getElementById("barBuyPrice").textContent = "฿0.00";
-          document.getElementById("barSellPrice").textContent = "฿0.00";
-          document.getElementById("jewelryBuyPrice").textContent = "฿0.00";
-          document.getElementById("jewelrySellPrice").textContent = "฿0.00";
         }
 
-        // Update transactions
-        if (data.transactions && data.transactions.length > 0) {
-          const tbody = document.getElementById("transactionTable");
-          tbody.innerHTML = data.transactions
-            .slice(0, 20)
-            .map(
-              (tx) => `
-                    <tr>
-                        <td>#${tx.id}</td>
-                        <td>${tx.symbol}</td>
-                        <td>${
-                          typeof tx.price === "number"
-                            ? tx.price.toLocaleString("en-US", {
-                                minimumFractionDigits: 2,
-                              })
-                            : tx.price
-                        }</td>
-                        <td class="state-${
-                          tx.state
-                        }">${tx.state.toUpperCase()}</td>
-                        <td>${tx.datetime}</td>
-                    </tr>
-                `
-            )
-            .join("");
-        } else {
-          const tbody = document.getElementById("transactionTable");
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="5" style="text-align: center; color: #999">
-                No transactions available
-              </td>
-            </tr>
-          `;
+        async function setStatus(status) {
+          try {
+            const response = await fetch(
+              "http://localhost:8080/api/set-status",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ status }),
+              }
+            );
+
+            const result = await response.json();
+            console.log("Status changed:", result);
+          } catch (error) {
+            console.error("Error changing status:", error);
+          }
         }
 
-        // Update last update time
-        document.getElementById("lastUpdate").textContent =
-          data.last_update || "-";
-      }
-
-      async function setStatus(status) {
-        try {
-          const response = await fetch("http://localhost:8080/api/set-status", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ status }),
-          });
-
-          const result = await response.json();
-          console.log("Status changed:", result);
-        } catch (error) {
-          console.error("Error changing status:", error);
-        }
-      }
-
-      // Connect on page load
-      connectWebSocket();
-    </script>
+        // Connect on page load
+        connectWebSocket();
+      </script>
+    </div>
   </body>
 </html>

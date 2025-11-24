@@ -15,8 +15,6 @@ import (
 	"gold-scraper/config"
 )
 
-const TransactionsFile = "transactions.json"
-
 func main() {
 	fmt.Println("🚀 Starting Real-time Gold Price Monitor with API Server")
 	fmt.Println("📊 Monitoring changes from multiple sources...")
@@ -46,40 +44,22 @@ func main() {
 	
 	if goldTraders != nil {
 		saveGoldTradersData(goldTraders)
-		if len(goldTraders.Prices) > 0 {
-			saveTransaction("ทองแท่ง Buy", goldTraders.Prices[0].BuyPrice, "buy")
-			saveTransaction("ทองแท่ง Sell", goldTraders.Prices[0].SellPrice, "sell")
-			if len(goldTraders.Prices) > 1 {
-				saveTransaction("ทองรูปพรรณ Buy", goldTraders.Prices[1].BuyPrice, "buy")
-				saveTransaction("ทองรูปพรรณ Sell", goldTraders.Prices[1].SellPrice, "sell")
-			}
-		}
 		backend.UpdateServerData(goldTraders, nil)
 	}
 	
 	if investing != nil {
 		saveInvestingData(investing)
-		saveTransaction("Investing.com (XAU/USD)", investing.Price, "market")
 		backend.UpdateServerData(nil, investing)
 	}
 
 	go backend.MonitorInvestingCom(ctx, func(data *backend.InvestingGoldPrice) {
 		saveInvestingData(data)
-		saveTransaction("Investing.com (XAU/USD)", data.Price, "market")
 		backend.UpdateServerData(nil, data)
 	})
 
 	go backend.MonitorGoldTraders(ctx, func(data *backend.GoldPriceResponse, hasChanged bool) {
 		if hasChanged {
 			saveGoldTradersData(data)
-			if len(data.Prices) > 0 {
-				saveTransaction("ทองแท่ง Buy", data.Prices[0].BuyPrice, "buy")
-				saveTransaction("ทองแท่ง Sell", data.Prices[0].SellPrice, "sell")
-				if len(data.Prices) > 1 {
-					saveTransaction("ทองรูปพรรณ Buy", data.Prices[1].BuyPrice, "buy")
-					saveTransaction("ทองรูปพรรณ Sell", data.Prices[1].SellPrice, "sell")
-				}
-			}
 			backend.UpdateServerData(data, nil)
 		}
 	})
@@ -89,52 +69,6 @@ func main() {
 	time.Sleep(1 * time.Second)
 	log.Println("Shutdown")
 }
-
-func saveTransaction(symbol string, price float64, state string) {
-	tx := backend.Transaction{
-		Symbol:   symbol,
-		Price:    price,
-		State:    state,
-		DateTime: time.Now().Format("2006-01-02 15:04:05"),
-	}
-
-	transactions := loadTransactions()
-
-	transactions = append([]backend.Transaction{tx}, transactions...)
-
-	if len(transactions) > 1000 {
-		transactions = transactions[:1000]
-	}
-
-	file, err := os.Create(TransactionsFile)
-	if err != nil {
-		log.Printf("Error saving transaction: %v", err)
-		return
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(transactions); err != nil {
-		log.Printf("⚠️  Error encoding transactions: %v", err)
-	}
-}
-
-func loadTransactions() []backend.Transaction {
-	file, err := os.Open(TransactionsFile)
-	if err != nil {
-		return []backend.Transaction{}
-	}
-	defer file.Close()
-
-	var transactions []backend.Transaction
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&transactions); err != nil {
-		return []backend.Transaction{}
-	}
-	return transactions
-}
-
 
 func saveInvestingData(data *backend.InvestingGoldPrice) {
 	combinedData := loadCombinedData()

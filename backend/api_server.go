@@ -17,25 +17,15 @@ type ServerState struct {
 	Status         string                 `json:"status"`
 	GoldTraders    *GoldPriceResponse     `json:"goldtraders"`
 	InvestingCom   *InvestingGoldPrice    `json:"investing_com"`
-	Transactions   []Transaction          `json:"transactions"`
 	LastUpdate     string                 `json:"last_update"`
 	mu             sync.RWMutex
 	wsClients      map[*websocket.Conn]bool
 	wsClientsMutex sync.Mutex
 }
 
-type Transaction struct {
-	ID       int     `json:"id"`
-	Symbol   string  `json:"symbol"`
-	Price    float64 `json:"price"`
-	State    string  `json:"state"`
-	DateTime string  `json:"datetime"`
-}
-
 var (
 	serverState = &ServerState{
 		Status:       "online",
-		Transactions: []Transaction{},
 		wsClients:    make(map[*websocket.Conn]bool),
 	}
 	upgrader = websocket.Upgrader{
@@ -43,7 +33,6 @@ var (
 			return true
 		},
 	}
-	transactionID = 1
 )
 
 // API Handlers
@@ -151,7 +140,6 @@ func resetPrices() {
 	// เคลียร์ข้อมูลทั้งหมดเป็น nil
 	serverState.GoldTraders = nil
 	serverState.InvestingCom = nil
-	serverState.Transactions = []Transaction{}
 	serverState.LastUpdate = time.Now().Format("2006-01-02 15:04:05")
 	
 	log.Println("🛑 System STOPPED - All data cleared")
@@ -193,44 +181,6 @@ func UpdateServerData(goldTraders *GoldPriceResponse, investing *InvestingGoldPr
 	}
 	
 	serverState.LastUpdate = time.Now().Format("2006-01-02 15:04:05")
-
-	// เพิ่ม transactions
-	if goldTraders != nil && len(goldTraders.Prices) > 0 {
-		for _, price := range goldTraders.Prices {
-			serverState.Transactions = append([]Transaction{{
-				ID:       transactionID,
-				Symbol:   price.Type,
-				Price:    price.BuyPrice,
-				State:    "buy",
-				DateTime: time.Now().Format("2006-01-02 15:04:05"),
-			}}, serverState.Transactions...)
-			transactionID++
-
-			serverState.Transactions = append([]Transaction{{
-				ID:       transactionID,
-				Symbol:   price.Type,
-				Price:    price.SellPrice,
-				State:    "sell",
-				DateTime: time.Now().Format("2006-01-02 15:04:05"),
-			}}, serverState.Transactions...)
-			transactionID++
-		}
-	}
-
-	if investing != nil {
-		serverState.Transactions = append([]Transaction{{
-			ID:       transactionID,
-			Symbol:   investing.Type,
-			Price:    investing.Price,
-			State:    "market",
-			DateTime: time.Now().Format("2006-01-02 15:04:05"),
-		}}, serverState.Transactions...)
-		transactionID++
-	}
-
-	if len(serverState.Transactions) > 50 {
-		serverState.Transactions = serverState.Transactions[:50]
-	}
 
 	go broadcastUpdate()
 }
