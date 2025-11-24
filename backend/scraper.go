@@ -34,7 +34,7 @@ func MonitorInvestingCom(ctx context.Context, onUpdate func(*InvestingGoldPrice)
 		chromedp.Navigate(config.InvestingComURL),
 	)
 	if err != nil {
-		log.Printf("⚠️  Cannot navigate to investing.com: %v", err)
+		log.Printf("Cannot navigate to investing.com: %v", err)
 		return
 	}
 
@@ -49,7 +49,7 @@ func MonitorInvestingCom(ctx context.Context, onUpdate func(*InvestingGoldPrice)
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("✅ Investing.com monitor stopped")
+			log.Println("Investing monitor stopped")
 			return
 		case <-ticker.C:
 		}
@@ -65,7 +65,7 @@ func MonitorInvestingCom(ctx context.Context, onUpdate func(*InvestingGoldPrice)
 		if err != nil {
 			retryCount++
 			if retryCount >= config.MaxRetries {
-				log.Printf("⚠️  Error fetching investing.com (retry %d/%d): %v", retryCount, config.MaxRetries, err)
+				log.Printf("Error fetching investing.com (retry %d/%d): %v", retryCount, config.MaxRetries, err)
 				retryCount = 0
 			}
 			continue
@@ -113,7 +113,7 @@ func MonitorGoldTraders(ctx context.Context, onUpdate func(*GoldPriceResponse, b
 
 	go func() {
 		<-ctx.Done()
-		log.Println("🛑 Closing GoldTraders browser...")
+		log.Println("Closing GoldTraders browser...")
 		browserCancel()
 		allocCancel()
 	}()
@@ -122,7 +122,7 @@ func MonitorGoldTraders(ctx context.Context, onUpdate func(*GoldPriceResponse, b
 		chromedp.Navigate(config.GoldTradersURL),
 	)
 	if err != nil {
-		log.Printf("⚠️  Cannot navigate to goldtraders: %v", err)
+		log.Printf("Cannot navigate to goldtraders: %v", err)
 		return
 	}
 
@@ -136,7 +136,7 @@ func MonitorGoldTraders(ctx context.Context, onUpdate func(*GoldPriceResponse, b
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("✅ GoldTraders monitor stopped")
+			log.Println("GoldTraders monitor stopped")
 			return
 		case <-ticker.C:
 		}
@@ -148,14 +148,14 @@ func MonitorGoldTraders(ctx context.Context, onUpdate func(*GoldPriceResponse, b
 		)
 
 		if err != nil {
-			log.Printf("⚠️  Error fetching goldtraders: %v", err)
+			log.Printf("Error fetching goldtraders: %v", err)
 			continue
 		}
 
 		prices := ParseGoldPrices(htmlContent)
 
 		if len(prices) == 0 {
-			log.Printf("⚠️  No prices found from goldtraders")
+			log.Printf("No prices found from goldtraders")
 			continue
 		}
 
@@ -217,7 +217,7 @@ func FetchInitialData() (*GoldPriceResponse, *InvestingGoldPrice) {
 			DisplayGoldTradersPrices(goldTraders)
 		}
 	} else {
-		log.Printf("⚠️  Could not fetch initial goldtraders data: %v", err)
+		log.Printf("Could not fetch initial goldtraders data: %v", err)
 	}
 
 	var investing *InvestingGoldPrice
@@ -238,7 +238,7 @@ func FetchInitialData() (*GoldPriceResponse, *InvestingGoldPrice) {
 	if err2 == nil {
 		price := ParsePrice(priceText)
 		if price > 0 {
-			fmt.Printf("💰 Investing.com: $%.2f %s\n", price, strings.TrimSpace(currencyText))
+			fmt.Printf("Investing.com: $%.2f %s\n", price, strings.TrimSpace(currencyText))
 			investing = &InvestingGoldPrice{
 				Type:       "Gold Spot Price (XAU/USD)",
 				Price:      price,
@@ -247,7 +247,7 @@ func FetchInitialData() (*GoldPriceResponse, *InvestingGoldPrice) {
 			}
 		}
 	} else {
-		log.Printf("⚠️  Could not fetch initial investing data: %v", err2)
+		log.Printf("Could not fetch initial investing data: %v", err2)
 	}
 
 	fmt.Println()

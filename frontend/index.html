@@ -117,6 +117,13 @@
         background: #ef4444;
         color: white;
       }
+      .flex-between {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 15px;
+        /* align-items: center; */
+      }
 
       .grid {
         display: grid;
@@ -232,6 +239,39 @@
         color: #ef4444;
       }
 
+      .mini-controls {
+        display: flex;
+        gap: 5px;
+        justify-content: center;
+        margin-top: 15px;
+        /* padding-top: 15px; */
+        border-top: 1px solid #eee;
+      }
+
+      .mini-btn {
+        padding: 8px 12px;
+        font-size: 0.9em;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: bold;
+      }
+
+      .mini-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+      }
+
+      .mini-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 10px;
+        font-size: 0.75em;
+        font-weight: bold;
+        margin-left: 8px;
+      }
+
       @media (max-width: 768px) {
         h1 {
           font-size: 1.5em;
@@ -256,18 +296,18 @@
           <h1>
             Gold Price Monitor
             <span id="statusBadge" class="status-badge status-online"
-              >● ONLINE</span
+              >ONLINE</span
             >
           </h1>
           <div class="controls">
-            <button class="btn-online" onclick="setStatus('online')">
-              Online
+            <button class="btn-online" onclick="setStatus('online', 'all')">
+              Online All
             </button>
-            <button class="btn-pause" onclick="setStatus('paused')">
-              Pause
+            <button class="btn-pause" onclick="setStatus('paused', 'all')">
+              Pause All
             </button>
-            <button class="btn-stop" onclick="setStatus('stopped')">
-              Stop
+            <button class="btn-stop" onclick="setStatus('stopped', 'all')">
+              Stop All
             </button>
           </div>
         </header>
@@ -275,21 +315,43 @@
         <div class="grid">
           <!-- Investing.com Card -->
           <div class="card">
-            <div class="card-header">Gold Spot Price (XAU/USD)</div>
-            <div class="price-large" id="investingPrice">$0.00</div>
-            <!-- <div class="price-info">
-            <span class="price-label">เปลี่ยนแปลง:</span>
-            <span class="price-value" id="investingChange">-</span>
-          </div> -->
-            <!-- <div class="price-info">
-            <span class="price-label">เปอร์เซ็นต์:</span>
-            <span class="price-value" id="investingPercent">-</span>
-          </div> -->
+            <div class="card-header">
+              Gold Spot Price (XAU/USD)
+              <span id="investingBadge" class="mini-badge status-online"
+                >.</span
+              >
+            </div>
+            <div class="flex-between">
+              <div class="price-large" id="investingPrice">$0.00</div>
+              <div class="mini-controls">
+                <button
+                  class="mini-btn btn-online"
+                  onclick="setStatus('online', 'investing')"
+                >
+                  Online
+                </button>
+                <button
+                  class="mini-btn btn-pause"
+                  onclick="setStatus('paused', 'investing')"
+                >
+                  Pause
+                </button>
+                <button
+                  class="mini-btn btn-stop"
+                  onclick="setStatus('stopped', 'investing')"
+                >
+                  Stop
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Gold Bar Card -->
           <div class="card">
-            <div class="card-header">ทองคำแท่ง 96.5% (บาท)</div>
+            <div class="card-header">
+              ทองคำแท่ง 96.5% (บาท)
+              <span id="goldbarBadge" class="mini-badge status-online">.</span>
+            </div>
             <div class="price-info">
               <span class="price-label">รับซื้อ:</span>
               <span class="price-value price-buy" id="barBuyPrice">฿0.00</span>
@@ -300,11 +362,36 @@
                 >฿0.00</span
               >
             </div>
+            <div class="mini-controls">
+              <button
+                class="mini-btn btn-online"
+                onclick="setStatus('online', 'goldbar')"
+              >
+                Online
+              </button>
+              <button
+                class="mini-btn btn-pause"
+                onclick="setStatus('paused', 'goldbar')"
+              >
+                Pause
+              </button>
+              <button
+                class="mini-btn btn-stop"
+                onclick="setStatus('stopped', 'goldbar')"
+              >
+                Stop
+              </button>
+            </div>
           </div>
 
           <!-- Gold Jewelry Card -->
           <div class="card">
-            <div class="card-header">ทองรูปพรรณ 96.5% (บาท)</div>
+            <div class="card-header">
+              ทองรูปพรรณ 96.5% (บาท)
+              <span id="goldjewelryBadge" class="mini-badge status-online"
+                >.</span
+              >
+            </div>
             <div class="price-info">
               <span class="price-label">รับซื้อ:</span>
               <span class="price-value price-buy" id="jewelryBuyPrice"
@@ -316,6 +403,26 @@
               <span class="price-value price-sell" id="jewelrySellPrice"
                 >฿0.00</span
               >
+            </div>
+            <div class="mini-controls">
+              <button
+                class="mini-btn btn-online"
+                onclick="setStatus('online', 'goldjewelry')"
+              >
+                Online
+              </button>
+              <button
+                class="mini-btn btn-pause"
+                onclick="setStatus('paused', 'goldjewelry')"
+              >
+                Pause
+              </button>
+              <button
+                class="mini-btn btn-stop"
+                onclick="setStatus('stopped', 'goldjewelry')"
+              >
+                Stop
+              </button>
             </div>
           </div>
         </div>
@@ -351,13 +458,39 @@
         }
 
         function updateUI(data) {
-          // Update status badge
+          // Update main status badge
           const statusBadge = document.getElementById("statusBadge");
-          statusBadge.textContent = `● ${data.status.toUpperCase()}`;
+          statusBadge.textContent = `${data.status.toUpperCase()}`;
           statusBadge.className = `status-badge status-${data.status}`;
 
+          // Update Investing.com badge
+          const investingBadge = document.getElementById("investingBadge");
+          if (investingBadge) {
+            investingBadge.className = `mini-badge status-${
+              data.investing_status || data.status
+            }`;
+          }
+
+          // Update GoldTraders badges
+          const goldbarBadge = document.getElementById("goldbarBadge");
+          const goldjewelryBadge = document.getElementById("goldjewelryBadge");
+          if (goldbarBadge) {
+            goldbarBadge.className = `mini-badge status-${
+              data.goldbar_status || data.status
+            }`;
+          }
+          if (goldjewelryBadge) {
+            goldjewelryBadge.className = `mini-badge status-${
+              data.goldjewelry_status || data.status
+            }`;
+          }
+
           // Update Investing.com
-          if (data.investing_com && data.investing_com.price > 0) {
+          if (
+            data.investing_com &&
+            data.investing_com.price > 0 &&
+            data.investing_status !== "stopped"
+          ) {
             document.getElementById(
               "investingPrice"
             ).textContent = `$${data.investing_com.price.toFixed(2)}`;
@@ -376,31 +509,43 @@
 
             data.goldtraders.prices.forEach((price) => {
               if (price.type.includes("แท่ง") || price.type.includes("Bar")) {
-                document.getElementById(
-                  "barBuyPrice"
-                ).textContent = `฿${price.buy_price.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                })}`;
-                document.getElementById(
-                  "barSellPrice"
-                ).textContent = `฿${price.sell_price.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                })}`;
+                if (data.goldbar_status !== "stopped") {
+                  document.getElementById(
+                    "barBuyPrice"
+                  ).textContent = `฿${price.buy_price.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                  })}`;
+                  document.getElementById(
+                    "barSellPrice"
+                  ).textContent = `฿${price.sell_price.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                  })}`;
+                } else {
+                  document.getElementById("barBuyPrice").textContent = "฿0.00";
+                  document.getElementById("barSellPrice").textContent = "฿0.00";
+                }
                 hasBarPrice = true;
               } else if (
                 price.type.includes("รูปพรรณ") ||
                 price.type.includes("Jewelry")
               ) {
-                document.getElementById(
-                  "jewelryBuyPrice"
-                ).textContent = `฿${price.buy_price.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                })}`;
-                document.getElementById(
-                  "jewelrySellPrice"
-                ).textContent = `฿${price.sell_price.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                })}`;
+                if (data.goldjewelry_status !== "stopped") {
+                  document.getElementById(
+                    "jewelryBuyPrice"
+                  ).textContent = `฿${price.buy_price.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                  })}`;
+                  document.getElementById(
+                    "jewelrySellPrice"
+                  ).textContent = `฿${price.sell_price.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                  })}`;
+                } else {
+                  document.getElementById("jewelryBuyPrice").textContent =
+                    "฿0.00";
+                  document.getElementById("jewelrySellPrice").textContent =
+                    "฿0.00";
+                }
                 hasJewelryPrice = true;
               }
             });
@@ -421,7 +566,7 @@
           }
         }
 
-        async function setStatus(status) {
+        async function setStatus(status, source = "all") {
           try {
             const response = await fetch(
               "http://localhost:8080/api/set-status",
@@ -430,7 +575,7 @@
                 headers: {
                   "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ status }),
+                body: JSON.stringify({ status, source }),
               }
             );
 

@@ -14,19 +14,27 @@ import (
 )
 
 type ServerState struct {
-	Status         string                 `json:"status"`
-	GoldTraders    *GoldPriceResponse     `json:"goldtraders"`
-	InvestingCom   *InvestingGoldPrice    `json:"investing_com"`
-	LastUpdate     string                 `json:"last_update"`
-	mu             sync.RWMutex
-	wsClients      map[*websocket.Conn]bool
-	wsClientsMutex sync.Mutex
+	Status              string                 `json:"status"`
+	InvestingStatus     string                 `json:"investing_status"`
+	GoldTradersStatus   string                 `json:"goldtraders_status"`
+	GoldBarStatus       string                 `json:"goldbar_status"`
+	GoldJewelryStatus   string                 `json:"goldjewelry_status"`
+	GoldTraders         *GoldPriceResponse     `json:"goldtraders"`
+	InvestingCom        *InvestingGoldPrice    `json:"investing_com"`
+	LastUpdate          string                 `json:"last_update"`
+	mu                  sync.RWMutex
+	wsClients           map[*websocket.Conn]bool
+	wsClientsMutex      sync.Mutex
 }
 
 var (
 	serverState = &ServerState{
-		Status:       "online",
-		wsClients:    make(map[*websocket.Conn]bool),
+		Status:            "online",
+		InvestingStatus:   "online",
+		GoldTradersStatus: "online",
+		GoldBarStatus:     "online",
+		GoldJewelryStatus: "online",
+		wsClients:         make(map[*websocket.Conn]bool),
 	}
 	upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
@@ -59,6 +67,7 @@ func handleSetStatus(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		Status string `json:"status"`
+		Source string `json:"source"` // "all", "investing", "goldtraders"
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -67,37 +76,94 @@ func handleSetStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	serverState.mu.Lock()
-	oldStatus := serverState.Status
-	serverState.Status = req.Status
-	serverState.mu.Unlock()
-
-	if req.Status == "stopped" {
-		resetPrices()
-	} else if req.Status == "online" && oldStatus == "stopped" {
-		// เมื่อกด ONLINE หลังจาก STOP → ดึงข้อมูลใหม่ทันที
-		go func() {
-			log.Println("🟢 System ONLINE - Fetching fresh data...")
-			goldTraders, investing := FetchInitialData()
-			
-			serverState.mu.Lock()
-			if goldTraders != nil {
-				serverState.GoldTraders = goldTraders
-			}
-			if investing != nil {
-				serverState.InvestingCom = investing
-			}
-			serverState.LastUpdate = time.Now().Format("2006-01-02 15:04:05")
-			serverState.mu.Unlock()
-			
-			broadcastUpdate()
-		}()
+	
+	switch req.Source {
+	case "investing":
+		oldStatus := serverState.InvestingStatus
+		serverState.InvestingStatus = req.Status
+		
+		if req.Status == "stopped" {
+			serverState.InvestingCom = nil
+			log.Println("STOPPED")
+		} else if req.Status == "online" && oldStatus == "stopped" {
+			go func() {
+				log.Println("ONLINE")
+				_, investing := FetchInitialData()
+				if investing != nil {
+					serverState.mu.Lock()
+					serverState.InvestingCom = investing
+					serverState.mu.Unlock()
+					broadcastUpdate()
+				}
+			}()
+		}
+		
+	case "goldtraders":
+		oldStatus := serverState.GoldTradersStatus
+		serverState.GoldTradersStatus = req.Status
+		serverState.GoldBarStatus = req.Status
+		serverState.GoldJewelryStatus = req.Status
+		
+		if req.Status == "stopped" {
+			serverState.GoldTraders = nil
+			log.Println("STOPPED")
+		} else if req.Status == "online" && oldStatus == "stopped" {
+			go func() {
+				log.Println("ONLINE")
+				goldTraders, _ := FetchInitialData()
+				if goldTraders != nil {
+					serverState.mu.Lock()
+					serverState.GoldTraders = goldTraders
+					serverState.mu.Unlock()
+					broadcastUpdate()
+				}
+			}()
+		}
+		
+	case "goldbar":
+		serverState.GoldBarStatus = req.Status
+		
+	case "goldjewelry":
+		serverState.GoldJewelryStatus = req.Status
+		
+	default: // "all"
+		oldStatus := serverState.Status
+		serverState.Status = req.Status
+		serverState.InvestingStatus = req.Status
+		serverState.GoldTradersStatus = req.Status
+		serverState.GoldBarStatus = req.Status
+		serverState.GoldJewelryStatus = req.Status
+		
+		if req.Status == "stopped" {
+			serverState.GoldTraders = nil
+			serverState.InvestingCom = nil
+			log.Println("STOPPED")
+		} else if req.Status == "online" && oldStatus == "stopped" {
+			go func() {
+				log.Println("ONLINE")
+				goldTraders, investing := FetchInitialData()
+				
+				serverState.mu.Lock()
+				if goldTraders != nil {
+					serverState.GoldTraders = goldTraders
+				}
+				if investing != nil {
+					serverState.InvestingCom = investing
+				}
+				serverState.LastUpdate = time.Now().Format("2006-01-02 15:04:05")
+				serverState.mu.Unlock()
+				
+				broadcastUpdate()
+			}()
+		}
 	}
-
+	
+	serverState.mu.Unlock()
 	broadcastUpdate()
 
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":  "success",
-		"message": fmt.Sprintf("Status changed to %s", req.Status),
+		"message": fmt.Sprintf("Status changed to %s for %s", req.Status, req.Source),
 	})
 }
 
@@ -142,7 +208,7 @@ func resetPrices() {
 	serverState.InvestingCom = nil
 	serverState.LastUpdate = time.Now().Format("2006-01-02 15:04:05")
 	
-	log.Println("🛑 System STOPPED - All data cleared")
+	log.Println("STOPPED")
 }
 
 func broadcastUpdate() {
@@ -166,17 +232,12 @@ func UpdateServerData(goldTraders *GoldPriceResponse, investing *InvestingGoldPr
 	serverState.mu.Lock()
 	defer serverState.mu.Unlock()
 
-	// อนุญาตให้อัพเดทได้เฉพาะเมื่อ status เป็น online
-	if serverState.Status != "online" {
-		return
-	}
-
-	// อัพเดทข้อมูล
-	if goldTraders != nil {
+	// อัพเดทข้อมูลตาม status ของแต่ละแหล่ง
+	if goldTraders != nil && serverState.GoldTradersStatus == "online" {
 		serverState.GoldTraders = goldTraders
 	}
 	
-	if investing != nil {
+	if investing != nil && serverState.InvestingStatus == "online" {
 		serverState.InvestingCom = investing
 	}
 	
@@ -191,8 +252,8 @@ func StartAPIServer() {
 	http.HandleFunc("/ws", handleWebSocket)
 	http.Handle("/", http.FileServer(http.Dir("./frontend")))
 
-	fmt.Println("🌐 API Server started at " + config.ServerPort)
-	fmt.Println("🖥️  Frontend available at http://localhost" + config.ServerPort)
+	fmt.Println("API Server " + config.ServerPort)
+	fmt.Println("Frontend: http://localhost" + config.ServerPort)
 
 	log.Fatal(http.ListenAndServe(config.ServerPort, nil))
 }

@@ -16,11 +16,7 @@ import (
 )
 
 func main() {
-	fmt.Println("🚀 Starting Real-time Gold Price Monitor with API Server")
-	fmt.Println("📊 Monitoring changes from multiple sources...")
-	fmt.Println("⏱️  Investing.com: Check every 2 seconds (Reusable Browser)")
-	fmt.Println("⏱️  GoldTraders: Check every 30 seconds (Reusable Browser)")
-	fmt.Println("💡 Press Ctrl+C to stop")
+	fmt.Println("Press Ctrl+C to stop")
 	fmt.Println(strings.Repeat("=", 70))
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -104,7 +100,7 @@ func loadCombinedData() *backend.CombinedGoldData {
 func saveCombinedData(data *backend.CombinedGoldData) {
 	file, err := os.Create(config.DataFile)
 	if err != nil {
-		log.Printf("⚠️  Error saving data: %v", err)
+		log.Printf("Error saving data: %v", err)
 		return
 	}
 	defer file.Close()
