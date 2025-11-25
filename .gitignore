@@ -1,7 +1,7 @@
-
-# Generated files
-transactions.json
-gold_prices.json
+#scrape file
+debug_*.html
+*.debug.html
+*_debug.html
 
 # Binaries for programs and plugins
 *.exe
@@ -23,8 +23,8 @@ go.work
 vendor/
 
 # Output files
+transactions.json
 gold_prices.json
-*.json
 
 # IDE
 .vscode/

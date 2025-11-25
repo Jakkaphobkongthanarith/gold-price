@@ -43,7 +43,6 @@ var (
 	}
 )
 
-// API Handlers
 func handleGetStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -67,7 +66,7 @@ func handleSetStatus(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		Status string `json:"status"`
-		Source string `json:"source"` // "all", "investing", "goldtraders"
+		Source string `json:"source"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -126,7 +125,7 @@ func handleSetStatus(w http.ResponseWriter, r *http.Request) {
 	case "goldjewelry":
 		serverState.GoldJewelryStatus = req.Status
 		
-	default: // "all"
+	default:
 		oldStatus := serverState.Status
 		serverState.Status = req.Status
 		serverState.InvestingStatus = req.Status
@@ -199,17 +198,6 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
-func resetPrices() {
-	serverState.mu.Lock()
-	defer serverState.mu.Unlock()
-
-	// เคลียร์ข้อมูลทั้งหมดเป็น nil
-	serverState.GoldTraders = nil
-	serverState.InvestingCom = nil
-	serverState.LastUpdate = time.Now().Format("2006-01-02 15:04:05")
-	
-	log.Println("STOPPED")
-}
 
 func broadcastUpdate() {
 	serverState.wsClientsMutex.Lock()
@@ -232,7 +220,6 @@ func UpdateServerData(goldTraders *GoldPriceResponse, investing *InvestingGoldPr
 	serverState.mu.Lock()
 	defer serverState.mu.Unlock()
 
-	// อัพเดทข้อมูลตาม status ของแต่ละแหล่ง
 	if goldTraders != nil && serverState.GoldTradersStatus == "online" {
 		serverState.GoldTraders = goldTraders
 	}

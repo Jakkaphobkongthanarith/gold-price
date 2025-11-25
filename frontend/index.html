@@ -458,12 +458,10 @@
         }
 
         function updateUI(data) {
-          // Update main status badge
           const statusBadge = document.getElementById("statusBadge");
           statusBadge.textContent = `${data.status.toUpperCase()}`;
           statusBadge.className = `status-badge status-${data.status}`;
 
-          // Update Investing.com badge
           const investingBadge = document.getElementById("investingBadge");
           if (investingBadge) {
             investingBadge.className = `mini-badge status-${
@@ -471,7 +469,6 @@
             }`;
           }
 
-          // Update GoldTraders badges
           const goldbarBadge = document.getElementById("goldbarBadge");
           const goldjewelryBadge = document.getElementById("goldjewelryBadge");
           if (goldbarBadge) {
@@ -485,7 +482,6 @@
             }`;
           }
 
-          // Update Investing.com
           if (
             data.investing_com &&
             data.investing_com.price > 0 &&
@@ -498,7 +494,6 @@
             document.getElementById("investingPrice").textContent = "$0.00";
           }
 
-          // Update GoldTraders
           if (
             data.goldtraders &&
             data.goldtraders.prices &&
@@ -586,7 +581,6 @@
           }
         }
 
-        // Connect on page load
         connectWebSocket();
       </script>
     </div>
